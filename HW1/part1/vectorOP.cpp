@@ -58,7 +58,7 @@ void clampedExpVector(float *values, int *exponents, float *output, int N)
 
    if(N % VECTOR_WIDTH != 0)
    {
-    for(int i = N; i < VECTOR_WIDTH; i++)
+    for(int i = N; i < N+VECTOR_WIDTH; i++)
     {
       values[i] = 0;
       exponents[i] = 1;
