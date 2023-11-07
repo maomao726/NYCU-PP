@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <thread>
+#include <algorithm>
 
 #include "CycleTimer.h"
 
@@ -36,8 +37,20 @@ void workerThreadStart(WorkerArgs *const args)
     // half of the image and thread 1 could compute the bottom half.
     // Of course, you can copy mandelbrotSerial() to this file and 
     // modify it to pursue a better performance.
-
-    printf("Hello world from thread %d\n", args->threadId);
+    unsigned int count_row = args->height / args->numThreads + (args->height % args->numThreads);
+    unsigned int start_row = count_row * args->threadId;
+    if(count_row >= args->height)
+    {
+        count_row = args->height - start_row;
+    }
+    
+    mandelbrotSerial(
+        args->x0, args->y0, args->x1, args->y1,
+        args->width, args->height,
+        start_row, count_row,
+        args->maxIterations, args->output
+        );
+    
 }
 
 //

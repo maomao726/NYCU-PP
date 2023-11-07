@@ -5,7 +5,7 @@
 
 using namespace std;
 
-
+unsigned int seed_seed = time(NULL);
 long long *result_list;
 
 typedef struct arg_struct {
@@ -19,7 +19,7 @@ void* monte_carlo_search(void *args)
 {
 	arg_struct* arg = (arg_struct*) args;
 	long long count_inCircle = 0;
-	unsigned int seed = time(NULL);
+	unsigned int seed = rand_r(&seed_seed);
 	
 	for(long long toss = 0; toss < (arg->num_tosses); toss++)
 	{
@@ -67,6 +67,7 @@ int main(const int argc, const char* argv[])
 		pthread_join(threads[i], NULL);
 		total_in_circle += result_list[i];
 	}
+
 	double pi_estimate = 4 * (double)total_in_circle / (double)number_of_tosses;
 	printf("%.8f\n", pi_estimate);
 	return 0;
