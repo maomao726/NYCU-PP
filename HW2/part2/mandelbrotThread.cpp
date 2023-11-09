@@ -13,7 +13,7 @@ typedef struct
     int maxIterations;
     int *output;
     int threadId;
-    unsigned int count_row;
+    int numThreads;
 } WorkerArgs;
 
 extern void mandelbrotSerial(
@@ -37,18 +37,14 @@ void workerThreadStart(WorkerArgs *const args)
     // half of the image and thread 1 could compute the bottom half.
     // Of course, you can copy mandelbrotSerial() to this file and 
     // modify it to pursue a better performance.
-    double startTime = CycleTimer::currentSeconds();
-    unsigned int start_row = args->count_row * args->threadId;
-    unsigned int total_row = start_row + args->count_row < args->height ? args->count_row : args->height - start_row;
-        
+    
+    for(unsigned int i = args->threadId; i < args->height; i += args->numThreads)
     mandelbrotSerial(
         args->x0, args->y0, args->x1, args->y1,
         args->width, args->height,
-        start_row, total_row,
+        i, 1,
         args->maxIterations, args->output
         );
-    double endTime = CycleTimer::currentSeconds();
-    printf("Time cost of Thread %d : %fms\n", args->threadId, (endTime-startTime)*1000);
 }
 
 //
@@ -74,7 +70,6 @@ void mandelbrotThread(
     std::thread workers[MAX_THREADS];
     WorkerArgs args[MAX_THREADS];
 
-    unsigned int count_row = height / numThreads + (height % numThreads != 0);
     for (int i = 0; i < numThreads; i++)
     {
         // TODO FOR PP STUDENTS: You may or may not wish to modify
@@ -88,7 +83,7 @@ void mandelbrotThread(
         args[i].height = height;
         args[i].maxIterations = maxIterations;
         args[i].output = output;
-        args[i].count_row = count_row;
+        args[i].numThreads = numThreads;
         args[i].threadId = i;
     }
 
