@@ -37,6 +37,7 @@ void workerThreadStart(WorkerArgs *const args)
     // half of the image and thread 1 could compute the bottom half.
     // Of course, you can copy mandelbrotSerial() to this file and 
     // modify it to pursue a better performance.
+    double startTime = CycleTimer::currentSeconds();
     unsigned int start_row = args->count_row * args->threadId;
     unsigned int total_row = start_row + args->count_row < args->height ? args->count_row : args->height - start_row;
         
@@ -46,7 +47,8 @@ void workerThreadStart(WorkerArgs *const args)
         start_row, total_row,
         args->maxIterations, args->output
         );
-    
+    double endTime = CycleTimer::currentSeconds();
+    printf("Time cost of Thread %d : %fms\n", args->threadId, (endTime-startTime)*1000);
 }
 
 //
