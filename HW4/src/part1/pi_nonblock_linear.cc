@@ -15,16 +15,14 @@ int main(int argc, char **argv)
     int world_rank, world_size;
     // ---
 
-    MPI_Win win;
-
     // TODO: MPI init
     MPI_Comm_size( MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank( MPI_COMM_WORLD, &world_rank);
-    
-    unsigned int seed = world_rank * time(NULL);
     long long count = 0;
+    unsigned int seed = world_rank * time(NULL);
     long long int total_count = 0;
-    for(int i = 0; i < tosses / world_size; i++)
+    long long int local_toss = tosses / world_size;
+    for(long long int i = 0; i < local_toss; i++)
     {
         double x = ((double)rand_r(&seed) / (double)RAND_MAX);
         double y = ((double)rand_r(&seed) / (double)RAND_MAX);
@@ -34,29 +32,29 @@ int main(int argc, char **argv)
         }
     }
 
-    if (world_rank == 0)
+    if (world_rank > 0)
     {
-        // Master
+        // TODO: MPI workers
+        MPI_Send(&count, 1, MPI_LONG_LONG, 0, 0, MPI_COMM_WORLD);
+    }
+    else if (world_rank == 0)
+    {
+        // TODO: non-blocking MPI communication.
+        // Use MPI_Irecv, MPI_Wait or MPI_Waitall.
+        MPI_Request requests[world_size - 1];
+        MPI_Status status[world_size - 1];
+        long long int local_count[world_size - 1];
+        for(int i = 0; i < world_size - 1; i++)
+            MPI_Irecv(local_count+i, 1, MPI_LONG_LONG, i+1, 0, MPI_COMM_WORLD, requests+i);
+        MPI_Waitall(world_size - 1, requests, status);
+
         total_count = count;
-        MPI_Win_create(&total_count, sizeof(long long), sizeof(long long), MPI_INFO_NULL,
-          MPI_COMM_WORLD, &win);
+        for(int i = 0; i < world_size - 1; i++)total_count += local_count[i];
     }
-    else
-    {
-        // Workers
-        MPI_Win_create(NULL, 0, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &win);
-
-        // Register with the master
-        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 0, 0, win);
-        MPI_Accumulate(&count, 1, MPI_LONG_LONG, 0, 0, 1, MPI_LONG_LONG, MPI_SUM, win);
-        MPI_Win_unlock(0, win);
-    }
-
-    MPI_Win_free(&win);
 
     if (world_rank == 0)
     {
-        // TODO: handle PI result
+        // TODO: PI result
         pi_result =  4 * (double)total_count / (double)tosses;
         // --- DON'T TOUCH ---
         double end_time = MPI_Wtime();
@@ -64,7 +62,7 @@ int main(int argc, char **argv)
         printf("MPI running time: %lf Seconds\n", end_time - start_time);
         // ---
     }
-    
+
     MPI_Finalize();
     return 0;
 }

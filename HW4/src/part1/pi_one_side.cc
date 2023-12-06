@@ -15,34 +15,50 @@ int main(int argc, char **argv)
     int world_rank, world_size;
     // ---
 
+    MPI_Win win;
+
     // TODO: MPI init
     MPI_Comm_size( MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank( MPI_COMM_WORLD, &world_rank);
-    long long local_count[world_size] = {0};
+    
     unsigned int seed = world_rank * time(NULL);
+    long long count = 0;
     long long int total_count = 0;
-    for(int i = 0; i < tosses / world_size; i++)
+    long long int local_toss = tosses / world_size;
+    for(long long int i = 0; i < local_toss; i++)
     {
         double x = ((double)rand_r(&seed) / (double)RAND_MAX);
         double y = ((double)rand_r(&seed) / (double)RAND_MAX);
         if(x * x + y * y <= 1.0)
         {
-            local_count[world_rank]++;
+            count++;
         }
     }
-    MPI_Gather(local_count + world_rank, 1, MPI_LONG_LONG, local_count, 1, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
-    // TODO: use MPI_Gather
+
     if (world_rank == 0)
     {
-        for(int i = 0; i < world_size; i++)
-            total_count += local_count[i];
+        // Master
+        total_count = count;
+        MPI_Win_create(&total_count, sizeof(long long), sizeof(long long), MPI_INFO_NULL,
+          MPI_COMM_WORLD, &win);
+    }
+    else
+    {
+        // Workers
+        MPI_Win_create(NULL, 0, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+
+        // Register with the master
+        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 0, 0, win);
+        MPI_Accumulate(&count, 1, MPI_LONG_LONG, 0, 0, 1, MPI_LONG_LONG, MPI_SUM, win);
+        MPI_Win_unlock(0, win);
     }
 
+    MPI_Win_free(&win);
+
     if (world_rank == 0)
     {
-        // TODO: PI result
+        // TODO: handle PI result
         pi_result =  4 * (double)total_count / (double)tosses;
-
         // --- DON'T TOUCH ---
         double end_time = MPI_Wtime();
         printf("%lf\n", pi_result);

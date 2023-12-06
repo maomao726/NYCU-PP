@@ -18,38 +18,20 @@ int main(int argc, char **argv)
     // TODO: MPI init
     MPI_Comm_size( MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank( MPI_COMM_WORLD, &world_rank);
-    long long count = 0;
+    long long local_count = 0;
     unsigned int seed = world_rank * time(NULL);
     long long int total_count = 0;
-    for(int i = 0; i < tosses / world_size; i++)
+    long long int local_toss = tosses / world_size;
+    for(long long int i = 0; i < local_toss; i++)
     {
         double x = ((double)rand_r(&seed) / (double)RAND_MAX);
         double y = ((double)rand_r(&seed) / (double)RAND_MAX);
         if(x * x + y * y <= 1.0)
         {
-            count++;
+            local_count++;
         }
     }
-
-    if (world_rank > 0)
-    {
-        // TODO: MPI workers
-        MPI_Send(&count, 1, MPI_LONG_LONG, 0, 0, MPI_COMM_WORLD);
-    }
-    else if (world_rank == 0)
-    {
-        // TODO: non-blocking MPI communication.
-        // Use MPI_Irecv, MPI_Wait or MPI_Waitall.
-        MPI_Request requests[world_size - 1];
-        MPI_Status status[world_size - 1];
-        long long int local_count[world_size - 1];
-        for(int i = 0; i < world_size - 1; i++)
-            MPI_Irecv(local_count+i, 1, MPI_LONG_LONG, i+1, 0, MPI_COMM_WORLD, requests+i);
-        MPI_Waitall(world_size - 1, requests, status);
-
-        total_count = count;
-        for(int i = 0; i < world_size - 1; i++)total_count += local_count[i];
-    }
+    MPI_Reduce(&local_count, &total_count, 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
 
     if (world_rank == 0)
     {

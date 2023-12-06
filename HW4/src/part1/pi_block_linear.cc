@@ -4,7 +4,6 @@
 #include <time.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <time.h>
 
 int main(int argc, char **argv)
 {
@@ -22,7 +21,8 @@ int main(int argc, char **argv)
     long long count = 0;
     unsigned int seed = world_rank * time(NULL);
     long long int total_count = 0;
-    for(int i = 0; i < tosses / world_size; i++)
+    long long int local_toss = tosses / world_size;
+    for(long long int i = 0; i < local_toss; i++)
     {
         double x = ((double)rand_r(&seed) / (double)RAND_MAX);
         double y = ((double)rand_r(&seed) / (double)RAND_MAX);
