@@ -7,7 +7,7 @@ __global__ void mandelKernel( int* d_data,
                               int width,
                               float lowerX, float lowerY,
                               float stepX, float stepY,
-                              int max_iteration, int pitch)
+                              int max_iteration)
 {
     // To avoid error caused by the floating number, use the following pseudo code
     //
@@ -32,8 +32,7 @@ __global__ void mandelKernel( int* d_data,
     }
 
     //write i back
-    int* target = (int*)((char*)d_data + thisY * pitch) + thisX;
-    *target = i;
+    d_data[thisY * width + thisX] = i;
 }
 
 // Host front-end function that allocates the memory and launches the GPU kernel
@@ -43,20 +42,16 @@ void hostFE (float upperX, float upperY, float lowerX, float lowerY, int* img, i
     float stepY = (upperY - lowerY) / resY;
 
     int img_size = resX * resY * sizeof(int);
-    int* h_data;
     int* d_data;
-    size_t pitch;
-    
+
     //kernel config/invoke
-    cudaHostAlloc((void**) &h_data, img_size, cudaHostAllocDefault);
-    cudaMallocPitch((void**) &d_data, &pitch, resX * sizeof(int), resY);
+    cudaMalloc(&d_data, img_size);
     dim3 dimGrid(resX / TILE_WIDTH, resY / TILE_WIDTH);
     dim3 dimBlock(TILE_WIDTH, TILE_WIDTH);
-    mandelKernel<<<dimGrid, dimBlock>>>(d_data, resX, lowerX, lowerY, stepX, stepY, maxIterations, pitch);
+    mandelKernel<<<dimGrid, dimBlock>>>(d_data, resX, lowerX, lowerY, stepX, stepY, maxIterations);
 
-    cudaMemcpy2D(h_data, resX * sizeof(int), d_data, pitch, resX * sizeof(int), resY, cudaMemcpyDeviceToHost);
-    memcpy(img, h_data, img_size);
-
+    cudaMemcpy(img, d_data, img_size, cudaMemcpyDeviceToHost);
+    //memcpy(img, h_data, img_size);
     cudaFree(d_data);
-    cudaFreeHost(h_data);
+    //free(h_data);
 }
