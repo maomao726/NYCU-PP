@@ -11,7 +11,7 @@ void hostFE(int filterWidth, float *filter, int imageHeight, int imageWidth,
     int filterSize = filterWidth * filterWidth * sizeof(float);
     int imgSize = imageHeight * imageWidth * sizeof(float);
     size_t localws[2] = {8, 8};
-    size_t globalws[2] = {imageHeight, imageWidth};
+    size_t globalws[2] = {imageWidth, imageHeight};
 
     cl_command_queue queue;
     queue = clCreateCommandQueue(*context, *device, 0, NULL);

@@ -1,13 +1,13 @@
 __kernel void convolution( __constant int *filterWidth,
                            __constant float *filter,
-                           __global float *inputImage,
+                           __constant float *inputImage,
                            __global float *outputImage) 
 {
    int halffilterSize = *filterWidth / 2;
-   int imageHeight = get_global_size(0);
-   int imageWidth = get_global_size(1);
-   int i = get_global_id(0);
-   int j = get_global_id(1);
+   int imageHeight = get_global_size(1);
+   int imageWidth = get_global_size(0);
+   int i = get_global_id(1);
+   int j = get_global_id(0);
    int k, l;
 
    float sum = 0;
